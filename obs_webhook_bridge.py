@@ -1,22 +1,24 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # ✅ Enables cross-origin browser requests
 import asyncio
 import websockets
 import json
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# Load environment variables from .env (for local dev) or Render environment
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)  # ✅ Allow CORS for all routes and origins
 
-# Configuration from .env or Render envVars
+# Configuration pulled from .env or Render settings
 OBS_HOST = os.getenv("OBS_HOST", "localhost")
-OBS_PORT = int(os.getenv("OBS_PORT", "4460"))  # Updated port
-BROWSER_SOURCE_NAME = os.getenv("BROWSER_SOURCE_NAME", "VOICE FOSTER")  # Updated source name
-EXPECTED_API_KEY = os.getenv("EXPECTED_API_KEY", "default_fallback_key")
+OBS_PORT = int(os.getenv("OBS_PORT", "4460"))  # ✅ Updated port
+BROWSER_SOURCE_NAME = os.getenv("BROWSER_SOURCE_NAME", "VOICE FOSTER")  # ✅ Updated source name
+EXPECTED_API_KEY = os.getenv("EXPECTED_API_KEY") or os.getenv("API_KEY", "default_fallback_key")
 
-# Async function to send command to OBS
+# Async function to send the VDO.Ninja URL to OBS browser source
 async def update_obs_browser_source(guest_id):
     url = f"https://vdo.ninja/?view={guest_id}&solo"
     payload = {
@@ -43,7 +45,7 @@ async def update_obs_browser_source(guest_id):
     except Exception as e:
         print(f"WebSocket error: {e}")
 
-# API route for triggering OBS source update
+# API trigger endpoint (can be called directly or from JS)
 @app.route("/trigger", methods=["GET"])
 def trigger():
     api_key = request.args.get("api_key")
@@ -57,7 +59,7 @@ def trigger():
     asyncio.run(update_obs_browser_source(guest_id))
     return jsonify({"status": "success", "guest_id": guest_id})
 
-# HTML form route to submit guest ID
+# HTML form route for users to request their interview link
 @app.route("/form")
 def obs_form():
     return """
@@ -76,7 +78,7 @@ def obs_form():
         document.getElementById("obsTriggerForm").addEventListener("submit", function(e) {
           e.preventDefault();
           const guestId = document.getElementById("guestId").value.trim();
-          const apiKey = "cnl3_secret_2025";
+          const apiKey = "cnl3_secret_2025";  // ✅ Must match what's in your Render env
           const url = `/trigger?guest_id=${encodeURIComponent(guestId)}&api_key=${apiKey}`;
           fetch(url)
             .then(response => response.json())
