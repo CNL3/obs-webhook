@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: obs-webhook-bridge
+    runtime: python
+    buildCommand: ""
+    startCommand: python obs_webhook_bridge.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10
