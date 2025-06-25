@@ -1,4 +1,4 @@
 Flask==2.3.2
-obsws-python==5.3.0
+obsws-python==1.7.2
 python-dotenv==1.0.1
-
+gunicorn
