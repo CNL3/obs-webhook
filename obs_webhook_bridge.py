@@ -16,9 +16,9 @@ CORS(app)  # Enable CORS for browser access
 
 # Configuration
 OBS_HOST = os.getenv("OBS_HOST", "localhost")
-OBS_PORT = int(os.getenv("OBS_PORT", "4460"))  # Updated
-BROWSER_SOURCE_NAME = os.getenv("BROWSER_SOURCE_NAME", "VOICE FOSTER")
-EXPECTED_API_KEY = os.getenv("EXPECTED_API_KEY", "default_fallback_key")
+OBS_PORT = int(os.getenv("OBS_PORT", "4460"))  # Confirmed updated port
+BROWSER_SOURCE_NAME = os.getenv("SOURCE_NAME", "VOICE FOSTER")  # Aligned with .env
+EXPECTED_API_KEY = os.getenv("API_KEY", "default_fallback_key")  # Aligned with .env
 
 # Generate random alphanumeric guest ID
 def generate_guest_id(length=8):
@@ -27,6 +27,8 @@ def generate_guest_id(length=8):
 # Async function to send OBS WebSocket command
 async def update_obs_browser_source(guest_id):
     view_url = f"https://vdo.ninja/?view={guest_id}&solo"
+    print(f"🔗 Sending view URL to OBS: {view_url}")
+
     payload = {
         "op": 6,
         "d": {
@@ -43,13 +45,15 @@ async def update_obs_browser_source(guest_id):
     }
 
     uri = f"ws://{OBS_HOST}:{OBS_PORT}"
+    print(f"🌐 Connecting to OBS at {uri}")
     try:
         async with websockets.connect(uri) as websocket:
             await websocket.send(json.dumps(payload))
+            print(f"📤 Payload sent to OBS: {json.dumps(payload, indent=2)}")
             response = await websocket.recv()
-            print(f"OBS Response: {response}")
+            print(f"✅ OBS Response: {response}")
     except Exception as e:
-        print(f"WebSocket error: {e}")
+        print(f"🚫 WebSocket error: {e}")
 
 # Route for frontend form
 @app.route("/form")
@@ -76,7 +80,6 @@ def form_page():
                 const pushLink = `https://vdo.ninja/?push=${data.guest_id}`;
                 document.getElementById("result").innerHTML = `
                   ✅ You're live-ready!<br>
-                  Click below to start your video feed:<br>
                   <a href="${pushLink}" target="_blank">${pushLink}</a>
                 `;
               } else {
@@ -98,8 +101,10 @@ def trigger_obs():
     api_key = request.args.get("api_key")
 
     if api_key != EXPECTED_API_KEY:
+        print("🔒 Unauthorized access attempt")
         return jsonify({"error": "Unauthorized"}), 401
 
     guest_id = generate_guest_id()
+    print(f"🆕 Generated Guest ID: {guest_id}")
     asyncio.run(update_obs_browser_source(guest_id))
     return jsonify({"status": "success", "guest_id": guest_id})
