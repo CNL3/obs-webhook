@@ -1,9 +1,15 @@
 services:
   - type: web
     name: obs-webhook-bridge
-    runtime: python
-    buildCommand: ""
+    env: python
+    buildCommand: pip install -r requirements.txt
     startCommand: python obs_webhook_bridge.py
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.10
+      - key: OBS_HOST
+        value: localhost
+      - key: OBS_PORT
+        value: 4460
+      - key: BROWSER_SOURCE_NAME
+        value: FOSTER NINJA
+      - key: EXPECTED_API_KEY
+        value: cnl3_secret_2025
