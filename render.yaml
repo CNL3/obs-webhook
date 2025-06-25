@@ -6,10 +6,10 @@ services:
     startCommand: python obs_webhook_bridge.py
     envVars:
       - key: OBS_HOST
-        value: localhost
+        fromEnv: OBS_HOST
       - key: OBS_PORT
-        value: 4460
+        fromEnv: OBS_PORT
       - key: BROWSER_SOURCE_NAME
-        value: FOSTER NINJA
+        fromEnv: BROWSER_SOURCE_NAME
       - key: EXPECTED_API_KEY
-        value: cnl3_secret_2025
+        fromEnv: EXPECTED_API_KEY
