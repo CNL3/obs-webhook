@@ -1,0 +1,5 @@
+# .env file for obs_webhook_bridge.py
+API_KEY=cnl3_secret_2025
+OBS_HOST=localhost
+OBS_PORT=4460
+SOURCE_NAME=FOSTER NINJA
