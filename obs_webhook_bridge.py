@@ -23,7 +23,6 @@ EXPECTED_API_KEY = os.getenv("API_KEY", "default_fallback_key")
 def generate_guest_id(length=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
-# 🧠 Updated logic here
 async def update_obs_browser_source(guest_id):
     view_url = f"https://vdo.ninja/?view={guest_id}&solo"
     print(f"🔗 Sending view URL to OBS: {view_url}")
@@ -36,14 +35,14 @@ async def update_obs_browser_source(guest_id):
             "requestData": {
                 "inputName": BROWSER_SOURCE_NAME,
                 "inputSettings": {
-                    "url": view_url
+                    "url": view_url,
+                    "restartWhenActive": True  # ✅ Force refresh of browser source
                 },
                 "overlay": False
             }
         }
     }
 
-    # Dynamic URI builder
     if OBS_HOST.startswith("ws://") or OBS_HOST.startswith("wss://"):
         uri = OBS_HOST
     else:
@@ -52,8 +51,21 @@ async def update_obs_browser_source(guest_id):
     print(f"🌐 Connecting to OBS WebSocket at: {uri}")
     try:
         async with websockets.connect(uri) as websocket:
+            hello_msg = await websocket.recv()
+            print(f"👋 OBS Hello: {hello_msg}")
+
+            await websocket.send(json.dumps({
+                "op": 1,
+                "d": {
+                    "rpcVersion": 1
+                }
+            }))
+            identified = await websocket.recv()
+            print(f"🪪 Identified: {identified}")
+
             await websocket.send(json.dumps(payload))
             print(f"📤 Payload sent to OBS:\n{json.dumps(payload, indent=2)}")
+
             response = await websocket.recv()
             print(f"✅ OBS Response: {response}")
     except Exception as e:
