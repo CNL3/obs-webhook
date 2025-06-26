@@ -47,8 +47,17 @@ async def update_obs_browser_source(guest_id, input_name):
         async with websockets.connect(uri) as websocket:
             await websocket.send(json.dumps(payload))
             print(f"📤 Payload sent to OBS:\n{json.dumps(payload, indent=2)}")
-            response = await websocket.recv()
-            print(f"✅ OBS Response: {response}")
+
+            # Wait for OBS to confirm the request
+            while True:
+                response_raw = await websocket.recv()
+                response = json.loads(response_raw)
+                if response.get("op") == 7:
+                    if response["d"].get("requestId", "").startswith("set-browser-source-"):
+                        print(f"✅ OBS confirmed update:\n{json.dumps(response, indent=2)}")
+                        break
+                else:
+                    print(f"ℹ️ Intermediate OBS message:\n{json.dumps(response, indent=2)}")
     except Exception as e:
         print(f"🚫 WebSocket error: {e}")
 
@@ -133,7 +142,7 @@ def form_jeff():
 @app.route("/trigger", methods=["GET"])
 def trigger_obs():
     api_key = request.args.get("api_key")
-    source_name = request.args.get("source", "VOICE FOSTER")  # fallback for legacy
+    source_name = request.args.get("source", "VOICE FOSTER")  # fallback default
 
     if api_key != EXPECTED_API_KEY:
         print("🔒 Unauthorized access attempt")
