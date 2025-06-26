@@ -18,6 +18,7 @@ CORS(app)
 OBS_HOST = os.getenv("OBS_HOST", "localhost")
 OBS_PORT = int(os.getenv("OBS_PORT", "4460"))
 EXPECTED_API_KEY = os.getenv("API_KEY", "default_fallback_key")
+OBS_PASSWORD = os.getenv("OBS_PASSWORD", "")  # Optional password if OBS requires it
 
 def generate_guest_id(length=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -26,7 +27,17 @@ async def update_obs_browser_source(guest_id, input_name):
     view_url = f"https://vdo.ninja/?view={guest_id}&solo"
     print(f"🔗 Sending view URL to OBS for {input_name}: {view_url}")
 
-    payload = {
+    identify_payload = {
+        "op": 1,
+        "d": {
+            "rpcVersion": 1,
+            "authentication": {
+                "password": OBS_PASSWORD
+            }
+        }
+    }
+
+    set_input_payload = {
         "op": 6,
         "d": {
             "requestType": "SetInputSettings",
@@ -43,19 +54,34 @@ async def update_obs_browser_source(guest_id, input_name):
 
     uri = OBS_HOST if OBS_HOST.startswith("ws") else f"ws://{OBS_HOST}:{OBS_PORT}"
     print(f"🌐 Connecting to OBS WebSocket at: {uri}")
+
     try:
         async with websockets.connect(uri) as websocket:
-            await websocket.send(json.dumps(payload))
-            print(f"📤 Payload sent to OBS:\n{json.dumps(payload, indent=2)}")
+            # Step 1: Identify
+            await websocket.send(json.dumps(identify_payload))
+            print("🔐 Sent Identify payload")
 
-            # Wait for OBS to confirm the request
+            # Step 2: Wait for "Identified"
+            while True:
+                resp = await websocket.recv()
+                response = json.loads(resp)
+                if response.get("op") == 2:
+                    print("✅ Successfully identified with OBS")
+                    break
+                else:
+                    print(f"ℹ️ Waiting for 'Identified', got: {json.dumps(response, indent=2)}")
+
+            # Step 3: Send SetInputSettings
+            await websocket.send(json.dumps(set_input_payload))
+            print(f"📤 Payload sent to OBS:\n{json.dumps(set_input_payload, indent=2)}")
+
+            # Step 4: Await Confirmation
             while True:
                 response_raw = await websocket.recv()
                 response = json.loads(response_raw)
-                if response.get("op") == 7:
-                    if response["d"].get("requestId", "").startswith("set-browser-source-"):
-                        print(f"✅ OBS confirmed update:\n{json.dumps(response, indent=2)}")
-                        break
+                if response.get("op") == 7 and response["d"].get("requestId", "").startswith("set-browser-source-"):
+                    print(f"✅ OBS confirmed update:\n{json.dumps(response, indent=2)}")
+                    break
                 else:
                     print(f"ℹ️ Intermediate OBS message:\n{json.dumps(response, indent=2)}")
     except Exception as e:
