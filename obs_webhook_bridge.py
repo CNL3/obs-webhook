@@ -6,8 +6,8 @@ import json
 import os
 import random
 import string
+import datetime
 from dotenv import load_dotenv
-from datetime import date
 
 # Load environment variables
 load_dotenv()
@@ -24,8 +24,8 @@ def generate_guest_id(length=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
 def generate_room_name():
-    today = date.today().isoformat()
-    return f"room-{today}"
+    today = datetime.date.today().strftime("%Y%m%d")
+    return f"room{today}"
 
 async def update_obs_browser_source(guest_id, input_name, room_name):
     view_url = f"https://vdo.ninja/?room={room_name}&view={guest_id}&solo"
@@ -48,18 +48,40 @@ async def update_obs_browser_source(guest_id, input_name, room_name):
 
     uri = OBS_HOST if OBS_HOST.startswith("ws") else f"ws://{OBS_HOST}:{OBS_PORT}"
     print(f"🌐 Connecting to OBS WebSocket at: {uri}")
+
     try:
         async with websockets.connect(uri) as websocket:
+            # Authenticate first (WebSocket v5+ requirement)
+            await websocket.send(json.dumps({
+                "op": 1,
+                "d": {
+                    "rpcVersion": 1
+                    # Add "authentication": "<password>" here if OBS WebSocket auth is enabled
+                }
+            }))
+            print("🔐 Sent Identify payload")
+
+            while True:
+                msg = await websocket.recv()
+                data = json.loads(msg)
+                if data.get("op") == 2:
+                    print("✅ Successfully identified with OBS")
+                    break
+                else:
+                    print(f"ℹ️ Waiting for Identify: {data}")
+
             await websocket.send(json.dumps(payload))
             print(f"📤 Payload sent to OBS:\n{json.dumps(payload, indent=2)}")
+
             while True:
                 response_raw = await websocket.recv()
                 response = json.loads(response_raw)
-                if response.get("op") == 7 and response["d"].get("requestId", "").startswith("set-browser-source-"):
+                if response.get("op") == 7 and response["d"].get("requestId") == payload["d"]["requestId"]:
                     print(f"✅ OBS confirmed update:\n{json.dumps(response, indent=2)}")
                     break
                 else:
-                    print(f"ℹ️ Intermediate OBS message:\n{json.dumps(response, indent=2)}")
+                    print(f"🔄 OBS intermediate response:\n{json.dumps(response, indent=2)}")
+
     except Exception as e:
         print(f"🚫 WebSocket error: {e}")
 
@@ -79,13 +101,14 @@ def form_foster():
       <p id="result" style="margin-top: 1rem;"></p>
 
       <script>
+        const room = "{room}";
         document.getElementById("generateLinkForm").addEventListener("submit", function(e) {{
           e.preventDefault();
           fetch("/trigger?api_key=cnl3_secret_2025&source=VOICE%20FOSTER")
             .then(response => response.json())
             .then(data => {{
               if (data.status === "success") {{
-                const pushLink = `https://vdo.ninja/?room={room}&push=${{data.guest_id}}`;
+                const pushLink = `https://vdo.ninja/?room=${{room}}&push=${{data.guest_id}}`;
                 document.getElementById("result").innerHTML = `
                   ✅ You're live-ready!<br>
                   <a href="${{pushLink}}" target="_blank">${{pushLink}}</a>
@@ -119,13 +142,14 @@ def form_jeff():
       <p id="result" style="margin-top: 1rem;"></p>
 
       <script>
+        const room = "{room}";
         document.getElementById("generateLinkForm").addEventListener("submit", function(e) {{
           e.preventDefault();
           fetch("/trigger?api_key=cnl3_secret_2025&source=VOICE%20JEFF")
             .then(response => response.json())
             .then(data => {{
               if (data.status === "success") {{
-                const pushLink = `https://vdo.ninja/?room={room}&push=${{data.guest_id}}`;
+                const pushLink = `https://vdo.ninja/?room=${{room}}&push=${{data.guest_id}}`;
                 document.getElementById("result").innerHTML = `
                   🎧 Link ready for Jeff:<br>
                   <a href="${{pushLink}}" target="_blank">${{pushLink}}</a>
