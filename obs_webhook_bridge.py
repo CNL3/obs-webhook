@@ -14,19 +14,17 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Configuration
+# Config
 OBS_HOST = os.getenv("OBS_HOST", "localhost")
 OBS_PORT = int(os.getenv("OBS_PORT", "4460"))
-BROWSER_SOURCE_NAME = os.getenv("SOURCE_NAME", "VOICE FOSTER")
 EXPECTED_API_KEY = os.getenv("API_KEY", "default_fallback_key")
 
 def generate_guest_id(length=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
-# Update OBS browser source with guest view URL
-async def update_obs_browser_source(guest_id):
+async def update_obs_browser_source(guest_id, input_name):
     view_url = f"https://vdo.ninja/?view={guest_id}&solo"
-    print(f"🔗 Sending view URL to OBS: {view_url}")
+    print(f"🔗 Sending view URL to OBS for {input_name}: {view_url}")
 
     payload = {
         "op": 6,
@@ -34,7 +32,7 @@ async def update_obs_browser_source(guest_id):
             "requestType": "SetInputSettings",
             "requestId": f"set-browser-source-{guest_id}",
             "requestData": {
-                "inputName": BROWSER_SOURCE_NAME,
+                "inputName": input_name,
                 "inputSettings": {
                     "url": view_url
                 },
@@ -43,11 +41,7 @@ async def update_obs_browser_source(guest_id):
         }
     }
 
-    if OBS_HOST.startswith("ws://") or OBS_HOST.startswith("wss://"):
-        uri = OBS_HOST
-    else:
-        uri = f"ws://{OBS_HOST}:{OBS_PORT}"
-
+    uri = OBS_HOST if OBS_HOST.startswith("ws") else f"ws://{OBS_HOST}:{OBS_PORT}"
     print(f"🌐 Connecting to OBS WebSocket at: {uri}")
     try:
         async with websockets.connect(uri) as websocket:
@@ -58,9 +52,8 @@ async def update_obs_browser_source(guest_id):
     except Exception as e:
         print(f"🚫 WebSocket error: {e}")
 
-# Simple form page for generating the push/view link
 @app.route("/form")
-def form_page():
+def form_foster():
     return """
     <!DOCTYPE html>
     <html>
@@ -76,21 +69,21 @@ def form_page():
       <script>
         document.getElementById("generateLinkForm").addEventListener("submit", function(e) {
           e.preventDefault();
-          fetch("/trigger?api_key=cnl3_secret_2025")
+          fetch("/trigger?api_key=cnl3_secret_2025&source=VOICE%20FOSTER")
             .then(response => response.json())
             .then(data => {
               if (data.status === "success") {
-                const pushLink = "https://vdo.ninja/?push=" + data.guest_id;
+                const pushLink = `https://vdo.ninja/?push=${data.guest_id}`;
                 document.getElementById("result").innerHTML = `
                   ✅ You're live-ready!<br>
                   <a href="${pushLink}" target="_blank">${pushLink}</a>
                 `;
               } else {
-                document.getElementById("result").innerText = "⚠️ Error: " + JSON.stringify(data);
+                document.getElementById("result").innerText = `⚠️ Error: ${JSON.stringify(data)}`;
               }
             })
             .catch(function(err) {
-              document.getElementById("result").innerText = "❌ Request failed: " + err;
+              document.getElementById("result").innerText = `❌ Request failed: ${err}`;
             });
         });
       </script>
@@ -98,16 +91,55 @@ def form_page():
     </html>
     """
 
-# API endpoint for generating guest ID and updating OBS
+@app.route("/form-jeff")
+def form_jeff():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head><title>Jeff's Interview Entry</title></head>
+    <body style="font-family: sans-serif; padding: 2rem;">
+      <h2>🎙️ Jeff — Your Interview Link</h2>
+      <p>Click below to enter the studio as co-host.</p>
+      <form id="generateLinkForm">
+        <button type="submit" style="padding: 0.5rem 1rem;">Get My Interview Link</button>
+      </form>
+      <p id="result" style="margin-top: 1rem;"></p>
+
+      <script>
+        document.getElementById("generateLinkForm").addEventListener("submit", function(e) {
+          e.preventDefault();
+          fetch("/trigger?api_key=cnl3_secret_2025&source=VOICE%20JEFF")
+            .then(response => response.json())
+            .then(data => {
+              if (data.status === "success") {
+                const pushLink = `https://vdo.ninja/?push=${data.guest_id}`;
+                document.getElementById("result").innerHTML = `
+                  🎧 Link ready for Jeff:<br>
+                  <a href="${pushLink}" target="_blank">${pushLink}</a>
+                `;
+              } else {
+                document.getElementById("result").innerText = `⚠️ Error: ${JSON.stringify(data)}`;
+              }
+            })
+            .catch(function(err) {
+              document.getElementById("result").innerText = `❌ Request failed: ${err}`;
+            });
+        });
+      </script>
+    </body>
+    </html>
+    """
+
 @app.route("/trigger", methods=["GET"])
 def trigger_obs():
     api_key = request.args.get("api_key")
+    source_name = request.args.get("source", "VOICE FOSTER")  # fallback for legacy
 
     if api_key != EXPECTED_API_KEY:
         print("🔒 Unauthorized access attempt")
         return jsonify({"error": "Unauthorized"}), 401
 
     guest_id = generate_guest_id()
-    print(f"🆕 Generated Guest ID: {guest_id}")
-    asyncio.run(update_obs_browser_source(guest_id))
+    print(f"🆕 Generated Guest ID: {guest_id} for source {source_name}")
+    asyncio.run(update_obs_browser_source(guest_id, source_name))
     return jsonify({"status": "success", "guest_id": guest_id})
