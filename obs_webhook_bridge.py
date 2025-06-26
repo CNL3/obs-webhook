@@ -12,19 +12,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for browser access
+CORS(app)
 
 # Configuration
 OBS_HOST = os.getenv("OBS_HOST", "localhost")
-OBS_PORT = int(os.getenv("OBS_PORT", "4460"))  # Confirmed updated port
-BROWSER_SOURCE_NAME = os.getenv("SOURCE_NAME", "VOICE FOSTER")  # Aligned with .env
-EXPECTED_API_KEY = os.getenv("API_KEY", "default_fallback_key")  # Aligned with .env
+OBS_PORT = int(os.getenv("OBS_PORT", "4460"))
+BROWSER_SOURCE_NAME = os.getenv("SOURCE_NAME", "VOICE FOSTER")
+EXPECTED_API_KEY = os.getenv("API_KEY", "default_fallback_key")
 
-# Generate random alphanumeric guest ID
 def generate_guest_id(length=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
 
-# Async function to send OBS WebSocket command
+# 🧠 Updated logic here
 async def update_obs_browser_source(guest_id):
     view_url = f"https://vdo.ninja/?view={guest_id}&solo"
     print(f"🔗 Sending view URL to OBS: {view_url}")
@@ -44,18 +43,22 @@ async def update_obs_browser_source(guest_id):
         }
     }
 
-    uri = f"ws://{OBS_HOST}:{OBS_PORT}"
-    print(f"🌐 Connecting to OBS at {uri}")
+    # Dynamic URI builder
+    if OBS_HOST.startswith("ws://") or OBS_HOST.startswith("wss://"):
+        uri = OBS_HOST
+    else:
+        uri = f"ws://{OBS_HOST}:{OBS_PORT}"
+
+    print(f"🌐 Connecting to OBS WebSocket at: {uri}")
     try:
         async with websockets.connect(uri) as websocket:
             await websocket.send(json.dumps(payload))
-            print(f"📤 Payload sent to OBS: {json.dumps(payload, indent=2)}")
+            print(f"📤 Payload sent to OBS:\n{json.dumps(payload, indent=2)}")
             response = await websocket.recv()
             print(f"✅ OBS Response: {response}")
     except Exception as e:
         print(f"🚫 WebSocket error: {e}")
 
-# Route for frontend form
 @app.route("/form")
 def form_page():
     return """
@@ -95,7 +98,6 @@ def form_page():
     </html>
     """
 
-# Route that generates ID and triggers OBS update
 @app.route("/trigger", methods=["GET"])
 def trigger_obs():
     api_key = request.args.get("api_key")
