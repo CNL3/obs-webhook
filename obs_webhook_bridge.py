@@ -64,6 +64,17 @@ def launch_obs_push_link(room_name, push_id="OBSFeed"):
     else:
         print("🔗 Browser launch skipped (not running locally)")
 
+def launch_obs_view_link(room_name):
+    url = f"https://vdo.ninja/?view={room_name}"
+    print("🌐 Opening VDO.Ninja viewer URL:", url)
+    if RUNNING_LOCALLY:
+        try:
+            webbrowser.open(url)
+        except Exception as e:
+            print("❌ Failed to open view URL:", e)
+    else:
+        print("🔗 View URL browser launch skipped (not running locally)")
+
 async def update_obs_browser_source(guest_id, input_name, room_name):
     view_url = f"https://vdo.ninja/?room={room_name}&view={guest_id}&solo"
     print(f"🔗 Sending view URL to OBS for {input_name}: {view_url}")
@@ -134,7 +145,136 @@ def trigger_obs():
     asyncio.run(update_obs_browser_source(guest_id, source_name, room_name))
     start_obs_virtual_cam()
     launch_obs_push_link(room_name)
+    launch_obs_view_link(room_name)
     return jsonify({"status": "success", "guest_id": guest_id, "room": room_name})
+
+@app.route("/form")
+def form_foster():
+    room = generate_room_name()
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Join Your Interview</title>
+      <style>
+        body {{
+          font-family: sans-serif;
+          font-size: 2.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          padding: 2rem;
+          text-align: center;
+        }}
+        button {{
+          padding: 0.5rem 1.5rem;
+          font-size: 2rem;
+          cursor: pointer;
+        }}
+        #result {{
+          margin-top: 2rem;
+          font-size: 2rem;
+        }}
+      </style>
+    </head>
+    <body>
+      <h2>🎤 You’re Ready to Join the Interview</h2>
+      <p>Click the button below to get your private broadcast link and send it to the studio.</p>
+      <form id=\"generateLinkForm\">
+        <button type=\"submit\">Generate Interview Link</button>
+      </form>
+      <p id=\"result\"></p>
+
+      <script>
+        const room = "{room}";
+        document.getElementById("generateLinkForm").addEventListener("submit", function(e) {{
+          e.preventDefault();
+          fetch("/trigger?api_key=cnl3_secret_2025&source=VOICE%20FOSTER")
+            .then(response => response.json())
+            .then(data => {{
+              if (data.status === "success") {{
+                const pushLink = `https://vdo.ninja/?room=${{data.room}}&push=${{data.guest_id}}`;
+                document.getElementById("result").innerHTML =
+                  `✅ You're live-ready!<br><a href="${{pushLink}}" target="_blank">${{pushLink}}</a>`;
+              }} else {{
+                document.getElementById("result").innerText = `⚠️ Error: ${{JSON.stringify(data)}}`;
+              }}
+            }})
+            .catch(function(err) {{
+              document.getElementById("result").innerText = `❌ Request failed: ${{err}}`;
+            }});
+        }});
+      </script>
+    </body>
+    </html>
+    """
+
+@app.route("/form-jeff")
+def form_jeff():
+    room = generate_room_name()
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Jeff's Interview Entry</title>
+      <style>
+        body {{
+          font-family: sans-serif;
+          font-size: 2.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          padding: 2rem;
+          text-align: center;
+        }}
+        button {{
+          padding: 0.5rem 1.5rem;
+          font-size: 2rem;
+          cursor: pointer;
+        }}
+        #result {{
+          margin-top: 2rem;
+          font-size: 2rem;
+        }}
+      </style>
+    </head>
+    <body>
+      <h2>🎙️ Jeff — Your Interview Link</h2>
+      <p>Click below to enter the studio as co-host.</p>
+      <form id=\"generateLinkForm\">
+        <button type=\"submit\">Get My Interview Link</button>
+      </form>
+      <p id=\"result\"></p>
+
+      <script>
+        const room = "{room}";
+        document.getElementById("generateLinkForm").addEventListener("submit", function(e) {{
+          e.preventDefault();
+          fetch("/trigger?api_key=cnl3_secret_2025&source=VOICE%20JEFF")
+            .then(response => response.json())
+            .then(data => {{
+              if (data.status === "success") {{
+                const pushLink = `https://vdo.ninja/?room=${{data.room}}&push=${{data.guest_id}}`;
+                document.getElementById("result").innerHTML =
+                  `🎧 Link ready for Jeff:<br><a href="${{pushLink}}" target="_blank">${{pushLink}}</a>`;
+              }} else {{
+                document.getElementById("result").innerText = `⚠️ Error: ${{JSON.stringify(data)}}`;
+              }}
+            }})
+            .catch(function(err) {{
+              document.getElementById("result").innerText = `❌ Request failed: ${{err}}`;
+            }});
+        }});
+      </script>
+    </body>
+    </html>
+    """
 
 @app.route("/latest-room")
 def latest_room():
