@@ -16,9 +16,8 @@ app = Flask(__name__)
 CORS(app)
 
 # Config
-OBS_HOST = os.getenv("OBS_HOST", "localhost")
-OBS_PORT = int(os.getenv("OBS_PORT", "4460"))
-EXPECTED_API_KEY = os.getenv("API_KEY", "default_fallback_key")
+OBS_URI = os.getenv("OBS_URI", "ws://localhost:4460")
+EXPECTED_API_KEY = os.getenv("EXPECTED_API_KEY", "default_fallback_key")
 
 def generate_guest_id(length=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -46,11 +45,10 @@ async def update_obs_browser_source(guest_id, input_name, room_name):
         }
     }
 
-    uri = OBS_HOST if OBS_HOST.startswith("ws") else f"ws://{OBS_HOST}:{OBS_PORT}"
-    print(f"🌐 Connecting to OBS WebSocket at: {uri}")
+    print(f"🌐 Connecting to OBS WebSocket at: {OBS_URI}")
 
     try:
-        async with websockets.connect(uri) as websocket:
+        async with websockets.connect(OBS_URI) as websocket:
             await websocket.send(json.dumps({
                 "op": 1,
                 "d": {
