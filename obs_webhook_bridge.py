@@ -135,12 +135,134 @@ def trigger_obs():
 @app.route("/form")
 def form_foster():
     room = generate_room_name()
-    return f"""..."""  # unchanged
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Join Your Interview</title>
+      <style>
+        body {{
+          font-family: sans-serif;
+          font-size: 2.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          padding: 2rem;
+          text-align: center;
+        }}
+        button {{
+          padding: 0.5rem 1.5rem;
+          font-size: 2rem;
+          cursor: pointer;
+        }}
+        #result {{
+          margin-top: 2rem;
+          font-size: 2rem;
+        }}
+      </style>
+    </head>
+    <body>
+      <h2>🎤 You’re Ready to Join the Interview</h2>
+      <p>Click the button below to get your private broadcast link and send it to the studio.</p>
+      <form id="generateLinkForm">
+        <button type="submit">Generate Interview Link</button>
+      </form>
+      <p id="result"></p>
+
+      <script>
+        const room = "{room}";
+        document.getElementById("generateLinkForm").addEventListener("submit", function(e) {{
+          e.preventDefault();
+          fetch("/trigger?api_key=cnl3_secret_2025&source=VOICE%20FOSTER")
+            .then(response => response.json())
+            .then(data => {{
+              if (data.status === "success") {{
+                const pushLink = `https://vdo.ninja/?room=${{room}}&push=${{data.guest_id}}`;
+                document.getElementById("result").innerHTML = `
+                  ✅ You're live-ready!<br>
+                  <a href="${{pushLink}}" target="_blank">${{pushLink}}</a>
+                `;
+              }} else {{
+                document.getElementById("result").innerText = `⚠️ Error: ${{JSON.stringify(data)}}`;
+              }}
+            }})
+            .catch(function(err) {{
+              document.getElementById("result").innerText = `❌ Request failed: ${{err}}`;
+            }});
+        }});
+      </script>
+    </body>
+    </html>
+    """
 
 @app.route("/form-jeff")
 def form_jeff():
     room = generate_room_name()
-    return f"""..."""  # unchanged
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Jeff's Interview Entry</title>
+      <style>
+        body {{
+          font-family: sans-serif;
+          font-size: 2.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          padding: 2rem;
+          text-align: center;
+        }}
+        button {{
+          padding: 0.5rem 1.5rem;
+          font-size: 2rem;
+          cursor: pointer;
+        }}
+        #result {{
+          margin-top: 2rem;
+          font-size: 2rem;
+        }}
+      </style>
+    </head>
+    <body>
+      <h2>🎙️ Jeff — Your Interview Link</h2>
+      <p>Click below to enter the studio as co-host.</p>
+      <form id="generateLinkForm">
+        <button type="submit">Get My Interview Link</button>
+      </form>
+      <p id="result"></p>
+
+      <script>
+        const room = "{room}";
+        document.getElementById("generateLinkForm").addEventListener("submit", function(e) {{
+          e.preventDefault();
+          fetch("/trigger?api_key=cnl3_secret_2025&source=VOICE%20JEFF")
+            .then(response => response.json())
+            .then(data => {{
+              if (data.status === "success") {{
+                const pushLink = `https://vdo.ninja/?room=${{room}}&push=${{data.guest_id}}`;
+                document.getElementById("result").innerHTML = `
+                  🎧 Link ready for Jeff:<br>
+                  <a href="${{pushLink}}" target="_blank">${{pushLink}}</a>
+                `;
+              }} else {{
+                document.getElementById("result").innerText = `⚠️ Error: ${{JSON.stringify(data)}}`;
+              }}
+            }})
+            .catch(function(err) {{
+              document.getElementById("result").innerText = `❌ Request failed: ${{err}}`;
+            }});
+        }});
+      </script>
+    </body>
+    </html>
+    """
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
