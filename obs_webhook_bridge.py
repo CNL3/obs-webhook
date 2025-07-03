@@ -64,16 +64,22 @@ def launch_obs_push_link(room_name, push_id="OBSFeed"):
     else:
         print("🔗 Browser launch skipped (not running locally)")
 
-def launch_obs_view_link(room_name):
-    url = f"https://vdo.ninja/?view={room_name}"
-    print("🌐 Opening VDO.Ninja viewer URL:", url)
+def launch_obs_view_link(room_name, director=True):
+    if director:
+        url = f"https://vdo.ninja/?room={room_name}&director=true"
+    else:
+        url = f"https://vdo.ninja/?room={room_name}"
+    
+    print("🌐 Opening VDO.Ninja director URL:" if director else "🌐 Opening VDO.Ninja viewer URL:", url)
+    
     if RUNNING_LOCALLY:
         try:
             webbrowser.open(url)
         except Exception as e:
-            print("❌ Failed to open view URL:", e)
+            print("❌ Failed to open browser:", e)
     else:
-        print("🔗 View URL browser launch skipped (not running locally)")
+        print("🔗 Director view browser launch skipped (not running locally)")
+
 
 async def update_obs_browser_source(guest_id, input_name, room_name):
     view_url = f"https://vdo.ninja/?room={room_name}&view={guest_id}&solo"
