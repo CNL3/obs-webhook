@@ -51,12 +51,10 @@ async def update_obs_browser_source(guest_id, input_name, room_name):
 
     try:
         async with websockets.connect(uri) as websocket:
-            # Authenticate first (WebSocket v5+ requirement)
             await websocket.send(json.dumps({
                 "op": 1,
                 "d": {
                     "rpcVersion": 1
-                    # Add "authentication": "<password>" here if OBS WebSocket auth is enabled
                 }
             }))
             print("🔐 Sent Identify payload")
@@ -91,14 +89,39 @@ def form_foster():
     return f"""
     <!DOCTYPE html>
     <html>
-    <head><title>Join Your Interview</title></head>
-    <body style="font-family: sans-serif; padding: 2rem;">
+    <head>
+      <title>Join Your Interview</title>
+      <style>
+        body {{
+          font-family: sans-serif;
+          font-size: 2.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          padding: 2rem;
+          text-align: center;
+        }}
+        button {{
+          padding: 0.5rem 1.5rem;
+          font-size: 2rem;
+          cursor: pointer;
+        }}
+        #result {{
+          margin-top: 2rem;
+          font-size: 2rem;
+        }}
+      </style>
+    </head>
+    <body>
       <h2>🎤 You’re Ready to Join the Interview</h2>
       <p>Click the button below to get your private broadcast link and send it to the studio.</p>
       <form id="generateLinkForm">
-        <button type="submit" style="padding: 0.5rem 1rem;">Generate Interview Link</button>
+        <button type="submit">Generate Interview Link</button>
       </form>
-      <p id="result" style="margin-top: 1rem;"></p>
+      <p id="result"></p>
 
       <script>
         const room = "{room}";
@@ -132,14 +155,39 @@ def form_jeff():
     return f"""
     <!DOCTYPE html>
     <html>
-    <head><title>Jeff's Interview Entry</title></head>
-    <body style="font-family: sans-serif; padding: 2rem;">
+    <head>
+      <title>Jeff's Interview Entry</title>
+      <style>
+        body {{
+          font-family: sans-serif;
+          font-size: 2.5rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          margin: 0;
+          padding: 2rem;
+          text-align: center;
+        }}
+        button {{
+          padding: 0.5rem 1.5rem;
+          font-size: 2rem;
+          cursor: pointer;
+        }}
+        #result {{
+          margin-top: 2rem;
+          font-size: 2rem;
+        }}
+      </style>
+    </head>
+    <body>
       <h2>🎙️ Jeff — Your Interview Link</h2>
       <p>Click below to enter the studio as co-host.</p>
       <form id="generateLinkForm">
-        <button type="submit" style="padding: 0.5rem 1rem;">Get My Interview Link</button>
+        <button type="submit">Get My Interview Link</button>
       </form>
-      <p id="result" style="margin-top: 1rem;"></p>
+      <p id="result"></p>
 
       <script>
         const room = "{room}";
