@@ -263,6 +263,10 @@ def form_jeff():
     </body>
     </html>
     """
+@app.route("/latest-room")
+def latest_room():
+    room_name = generate_room_name()
+    return jsonify({"room_name": room_name})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
