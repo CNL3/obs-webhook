@@ -24,6 +24,9 @@ OBS_URI = os.getenv("OBS_URI", "ws://localhost:4460")
 EXPECTED_API_KEY = os.getenv("EXPECTED_API_KEY", "default_fallback_key")
 RUNNING_LOCALLY = os.getenv("RUNNING_LOCALLY", "False").lower() == "true"
 
+# Runtime state
+LATEST_ROOM_NAME = None
+
 # Utility functions
 def generate_guest_id(length=8):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -117,6 +120,8 @@ async def update_obs_browser_source(guest_id, input_name, room_name):
 
 @app.route("/trigger", methods=["GET"])
 def trigger_obs():
+    global LATEST_ROOM_NAME
+
     api_key = request.args.get("api_key")
     source_name = request.args.get("source", "VOICE FOSTER")
 
@@ -126,11 +131,20 @@ def trigger_obs():
 
     guest_id = generate_guest_id()
     room_name = generate_room_name()
+    LATEST_ROOM_NAME = room_name
+
     print(f"🆕 Generated Guest ID: {guest_id} for source {source_name} in room {room_name}")
     asyncio.run(update_obs_browser_source(guest_id, source_name, room_name))
     start_obs_virtual_cam()
     launch_obs_push_link(room_name)
     return jsonify({"status": "success", "guest_id": guest_id, "room": room_name})
+
+@app.route("/latest-room", methods=["GET"])
+def latest_room():
+    if LATEST_ROOM_NAME:
+        return jsonify({"room_name": LATEST_ROOM_NAME})
+    else:
+        return jsonify({"room_name": None}), 404
 
 @app.route("/form")
 def form_foster():
