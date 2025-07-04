@@ -36,21 +36,29 @@ def generate_unique_room_name():
     suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
     return f"room{timestamp}_{suffix}"
 
-def start_obs_virtual_cam():
-    if not RUNNING_LOCALLY:
-        print("⚠️ Skipping OBS Virtual Cam start (not running locally)")
-        return
+async def start_virtual_cam_via_websocket():
+    payload = {
+        "op": 6,
+        "d": {
+            "requestType": "StartVirtualCam",
+            "requestId": "start-virtual-cam",
+            "requestData": {}
+        }
+    }
+    print("📡 Sending request to start OBS Virtual Camera via WebSocket...")
     try:
-        obs_path = r"C:\\Program Files\\obs-studio\\bin\\64bit\\obs64.exe"
-        obs_dir = os.path.dirname(obs_path)
-        if not os.path.exists(obs_path):
-            print(f"❌ OBS executable not found at {obs_path}")
-            return
-        subprocess.Popen([obs_path, "--startvirtualcam"], cwd=obs_dir)
-        print("📸 OBS Virtual Camera starting...")
-        time.sleep(2)
+        async with websockets.connect(OBS_URI) as websocket:
+            await websocket.send(json.dumps({"op": 1, "d": {"rpcVersion": 1}}))
+            while True:
+                msg = await websocket.recv()
+                data = json.loads(msg)
+                if data.get("op") == 2:
+                    print("🔓 Authenticated with OBS WebSocket")
+                    break
+            await websocket.send(json.dumps(payload))
+            print("✅ Sent StartVirtualCam payload")
     except Exception as e:
-        print("❌ Failed to start OBS Virtual Cam:", e)
+        print(f"❌ Failed to start OBS Virtual Cam via WebSocket: {e}")
 
 def launch_obs_push_link(room_name, push_id="OBSFeed"):
     url = f"https://vdo.ninja/?room={room_name}&push={push_id}&webcam"
@@ -130,7 +138,7 @@ def trigger_obs():
     LATEST_ROOM_NAME = room_name
     print(f"🆕 Generated Guest ID: {guest_id} for source {source_name} in room {room_name}")
     asyncio.run(update_obs_browser_source(guest_id, source_name, room_name))
-    start_obs_virtual_cam()
+    asyncio.run(start_virtual_cam_via_websocket())
     launch_obs_push_link(room_name)
     launch_obs_view_link(room_name)
     return jsonify({"status": "success", "guest_id": guest_id, "room": room_name})
