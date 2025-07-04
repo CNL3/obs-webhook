@@ -64,7 +64,7 @@ def launch_obs_push_link(room_name, push_id="OBSFeed"):
         print("🔗 Browser launch skipped (not running locally)")
 
 def launch_obs_view_link(room_name, director=True):
-    url = f"https://vdo.ninja/?room={room_name}&director=true" if director else f"https://vdo.ninja/?room={room_name}"
+    url = f"https://vdo.ninja/?room={room_name}&director" if director else f"https://vdo.ninja/?room={room_name}"
     print("🌐 Opening VDO.Ninja director URL:" if director else "🌐 Opening VDO.Ninja viewer URL:", url)
     if RUNNING_LOCALLY:
         try:
