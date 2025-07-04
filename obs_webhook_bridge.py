@@ -57,6 +57,20 @@ async def start_virtual_cam_via_websocket():
                     break
             await websocket.send(json.dumps(payload))
             print("✅ Sent StartVirtualCam payload")
+
+            # Wait for confirmation response
+            while True:
+                response = await websocket.recv()
+                data = json.loads(response)
+                if data.get("op") == 7 and data["d"].get("requestId") == "start-virtual-cam":
+                    status = data["d"].get("requestStatus", {})
+                    if status.get("result"):
+                        print("✅ OBS Virtual Camera started successfully.")
+                    else:
+                        print(f"⚠️ OBS responded but virtual camera may not have started: {status}")
+                    break
+                else:
+                    print(f"🔄 Waiting for virtual cam confirmation: {data}")
     except Exception as e:
         print(f"❌ Failed to start OBS Virtual Cam via WebSocket: {e}")
 
@@ -72,7 +86,11 @@ def launch_obs_push_link(room_name, push_id="OBSFeed"):
         print("🔗 Browser launch skipped (not running locally)")
 
 def launch_obs_view_link(room_name, director=True):
-    url = f"https://vdo.ninja/?room={room_name}&director" if director else f"https://vdo.ninja/?room={room_name}"
+    # Add enhanced VDO.Ninja launch flags for director view
+    if director:
+        url = f"https://vdo.ninja/?room={room_name}&director&webcam&mic&aspect=9:16&autostart"
+    else:
+        url = f"https://vdo.ninja/?room={room_name}"
     print("🌐 Opening VDO.Ninja director URL:" if director else "🌐 Opening VDO.Ninja viewer URL:", url)
     if RUNNING_LOCALLY:
         try:
