@@ -88,7 +88,7 @@ def launch_obs_push_link(room_name, push_id="OBSFeed"):
 def launch_obs_view_link(room_name, director=True):
     # Add enhanced VDO.Ninja launch flags for director view
     if director:
-        url = f"https://vdo.ninja/?room={room_name}&director&webcam&mic&aspect=9:16&autostart"
+        url = f"https://vdo.ninja/?room={room_name}&director&webcam&aspect=9:16&autostart"
     else:
         url = f"https://vdo.ninja/?room={room_name}"
     print("🌐 Opening VDO.Ninja director URL:" if director else "🌐 Opening VDO.Ninja viewer URL:", url)
